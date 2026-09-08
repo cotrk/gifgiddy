@@ -24,7 +24,15 @@ export const Route = createFileRoute("/")({
   component: Index,
 });
 
-type HistoryEntry = { prompt: string; url: string };
+type HistoryEntry = { id: string; prompt: string; url: string; rating: number };
+
+const RATINGS_KEY = "giddygen-ratings";
+
+function shareLinkFor(prompt: string, url: string) {
+  if (typeof window === "undefined") return "";
+  const params = new URLSearchParams({ p: prompt, g: url });
+  return `${window.location.origin}${window.location.pathname}?${params.toString()}`;
+}
 
 const NORMAL_LINES = [
   "Understanding your prompt…",
@@ -72,12 +80,56 @@ function Index() {
   const [caption, setCaption] = useState<string | null>(null);
   const [flooded, setFlooded] = useState(false);
   const [history, setHistory] = useState<HistoryEntry[]>([]);
+  const [copied, setCopied] = useState(false);
+  const [shared, setShared] = useState<{ prompt: string; url: string } | null>(null);
+  const [lastPrompt, setLastPrompt] = useState("");
   const timers = useRef<number[]>([]);
 
   useEffect(() => {
     getGiddyGifs().then((r) => setGifUrls(r.urls));
+    const params = new URLSearchParams(window.location.search);
+    const p = params.get("p");
+    const g = params.get("g");
+    if (g) setShared({ prompt: p ?? "", url: g });
     return () => timers.current.forEach((t) => window.clearTimeout(t));
   }, []);
+
+  // Persist ratings so favourites survive a reload
+  useEffect(() => {
+    try {
+      const raw = window.localStorage.getItem(RATINGS_KEY);
+      if (!raw) return;
+      const saved = JSON.parse(raw) as Record<string, number>;
+      setHistory((h) => h.map((e) => ({ ...e, rating: saved[e.id] ?? e.rating })));
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  const rate = (id: string, rating: number) => {
+    setHistory((h) => {
+      const next = h.map((e) => (e.id === id ? { ...e, rating } : e));
+      try {
+        window.localStorage.setItem(
+          RATINGS_KEY,
+          JSON.stringify(Object.fromEntries(next.map((e) => [e.id, e.rating])))
+        );
+      } catch {
+        /* ignore */
+      }
+      return next;
+    });
+  };
+
+  const copyLink = async (prompt: string, url: string) => {
+    try {
+      await navigator.clipboard.writeText(shareLinkFor(prompt, url));
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 1800);
+    } catch {
+      /* ignore */
+    }
+  };
 
   const stage = attempts >= 5 ? 2 : attempts >= 2 ? 1 : 0;
 
@@ -111,7 +163,11 @@ function Index() {
         setAttempts(nextAttempts);
         const url = randomFrom(gifUrls, result ?? undefined);
         setResult(url);
-        setHistory((h) => [{ prompt: submitted, url }, ...h]);
+        setLastPrompt(submitted);
+        setHistory((h) => [
+          { id: `${Date.now()}-${h.length}`, prompt: submitted, url, rating: 0 },
+          ...h,
+        ]);
 
         if (nextAttempts >= 5) {
           setFlooded(true);
@@ -189,6 +245,26 @@ function Index() {
           Our model understands exactly what you mean. Every time. Definitely.
         </p>
 
+        {/* Shared result */}
+        {shared && (
+          <div className="mt-8 w-full max-w-md rounded-2xl border border-border bg-card p-4 shadow-2xl">
+            <p className="mb-3 text-xs text-muted-foreground">
+              A friend asked for “{shared.prompt || "something"}” and got:
+            </p>
+            <img
+              src={shared.url}
+              alt="Shared Giddy dance GIF"
+              className="w-full rounded-xl"
+            />
+            <button
+              onClick={() => setShared(null)}
+              className="mt-3 text-xs text-muted-foreground underline"
+            >
+              Dismiss and try your own prompt
+            </button>
+          </div>
+        )}
+
         {/* Prompt box */}
         <div className="mt-10 w-full">
           <div className="flex gap-2 rounded-2xl border border-border bg-card p-2 shadow-2xl">
@@ -236,6 +312,14 @@ function Index() {
                   giddy_v{attempts}.gif
                 </span>
               </div>
+              <div className="border-t border-border px-4 py-3">
+                <button
+                  onClick={() => copyLink(lastPrompt, result)}
+                  className="w-full rounded-lg border border-border px-4 py-2 text-xs font-semibold transition hover:bg-muted"
+                >
+                  {copied ? "Link copied — go ruin someone's day" : "Copy shareable link"}
+                </button>
+              </div>
             </div>
             {extras.map((e, i) => (
               <img
@@ -262,18 +346,46 @@ function Index() {
           <section className="mt-16 w-full">
             <h2 className="mb-1 text-lg font-bold">Gallery of Shame</h2>
             <p className="mb-4 text-xs text-muted-foreground">
-              A permanent record of what you asked for vs. what you got.
+              A permanent record of what you asked for vs. what you got. Rate the funniest ones.
             </p>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              {history.map((h, i) => (
-                <div key={i} className="flex gap-3 rounded-xl border border-border bg-card p-3">
-                  <img src={h.url} alt="Giddy dance" className="h-16 w-16 rounded-lg object-cover" />
-                  <div className="min-w-0">
-                    <p className="truncate text-xs text-muted-foreground">“{h.prompt}”</p>
-                    <p className="mt-1 text-xs font-medium">→ Giddy.</p>
+              {[...history]
+                .sort((a, b) => b.rating - a.rating)
+                .map((h) => (
+                  <div key={h.id} className="flex gap-3 rounded-xl border border-border bg-card p-3">
+                    <img
+                      src={h.url}
+                      alt="Giddy dance"
+                      className="h-16 w-16 rounded-lg object-cover"
+                    />
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-xs text-muted-foreground">“{h.prompt}”</p>
+                      <p className="mt-1 text-xs font-medium">→ Giddy.</p>
+                      <div className="mt-2 flex items-center gap-2">
+                        <div className="flex">
+                          {[1, 2, 3, 4, 5].map((n) => (
+                            <button
+                              key={n}
+                              onClick={() => rate(h.id, n === h.rating ? 0 : n)}
+                              aria-label={`Rate ${n} out of 5`}
+                              className={`px-0.5 text-sm transition ${
+                                n <= h.rating ? "text-chart-5" : "text-muted-foreground opacity-40"
+                              } hover:opacity-100`}
+                            >
+                              ★
+                            </button>
+                          ))}
+                        </div>
+                        <button
+                          onClick={() => copyLink(h.prompt, h.url)}
+                          className="rounded border border-border px-2 py-0.5 text-[10px] transition hover:bg-muted"
+                        >
+                          Copy link
+                        </button>
+                      </div>
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))}
             </div>
           </section>
         )}
