@@ -163,7 +163,11 @@ function Index() {
         setAttempts(nextAttempts);
         const url = randomFrom(gifUrls, result ?? undefined);
         setResult(url);
-        setHistory((h) => [{ prompt: submitted, url }, ...h]);
+        setLastPrompt(submitted);
+        setHistory((h) => [
+          { id: `${Date.now()}-${h.length}`, prompt: submitted, url, rating: 0 },
+          ...h,
+        ]);
 
         if (nextAttempts >= 5) {
           setFlooded(true);
