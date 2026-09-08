@@ -24,7 +24,15 @@ export const Route = createFileRoute("/")({
   component: Index,
 });
 
-type HistoryEntry = { prompt: string; url: string };
+type HistoryEntry = { id: string; prompt: string; url: string; rating: number };
+
+const RATINGS_KEY = "giddygen-ratings";
+
+function shareLinkFor(prompt: string, url: string) {
+  if (typeof window === "undefined") return "";
+  const params = new URLSearchParams({ p: prompt, g: url });
+  return `${window.location.origin}${window.location.pathname}?${params.toString()}`;
+}
 
 const NORMAL_LINES = [
   "Understanding your prompt…",
