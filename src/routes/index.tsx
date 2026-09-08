@@ -245,6 +245,26 @@ function Index() {
           Our model understands exactly what you mean. Every time. Definitely.
         </p>
 
+        {/* Shared result */}
+        {shared && (
+          <div className="mt-8 w-full max-w-md rounded-2xl border border-border bg-card p-4 shadow-2xl">
+            <p className="mb-3 text-xs text-muted-foreground">
+              A friend asked for “{shared.prompt || "something"}” and got:
+            </p>
+            <img
+              src={shared.url}
+              alt="Shared Giddy dance GIF"
+              className="w-full rounded-xl"
+            />
+            <button
+              onClick={() => setShared(null)}
+              className="mt-3 text-xs text-muted-foreground underline"
+            >
+              Dismiss and try your own prompt
+            </button>
+          </div>
+        )}
+
         {/* Prompt box */}
         <div className="mt-10 w-full">
           <div className="flex gap-2 rounded-2xl border border-border bg-card p-2 shadow-2xl">
