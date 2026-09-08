@@ -326,18 +326,46 @@ function Index() {
           <section className="mt-16 w-full">
             <h2 className="mb-1 text-lg font-bold">Gallery of Shame</h2>
             <p className="mb-4 text-xs text-muted-foreground">
-              A permanent record of what you asked for vs. what you got.
+              A permanent record of what you asked for vs. what you got. Rate the funniest ones.
             </p>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              {history.map((h, i) => (
-                <div key={i} className="flex gap-3 rounded-xl border border-border bg-card p-3">
-                  <img src={h.url} alt="Giddy dance" className="h-16 w-16 rounded-lg object-cover" />
-                  <div className="min-w-0">
-                    <p className="truncate text-xs text-muted-foreground">“{h.prompt}”</p>
-                    <p className="mt-1 text-xs font-medium">→ Giddy.</p>
+              {[...history]
+                .sort((a, b) => b.rating - a.rating)
+                .map((h) => (
+                  <div key={h.id} className="flex gap-3 rounded-xl border border-border bg-card p-3">
+                    <img
+                      src={h.url}
+                      alt="Giddy dance"
+                      className="h-16 w-16 rounded-lg object-cover"
+                    />
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-xs text-muted-foreground">“{h.prompt}”</p>
+                      <p className="mt-1 text-xs font-medium">→ Giddy.</p>
+                      <div className="mt-2 flex items-center gap-2">
+                        <div className="flex">
+                          {[1, 2, 3, 4, 5].map((n) => (
+                            <button
+                              key={n}
+                              onClick={() => rate(h.id, n === h.rating ? 0 : n)}
+                              aria-label={`Rate ${n} out of 5`}
+                              className={`px-0.5 text-sm transition ${
+                                n <= h.rating ? "text-chart-5" : "text-muted-foreground opacity-40"
+                              } hover:opacity-100`}
+                            >
+                              ★
+                            </button>
+                          ))}
+                        </div>
+                        <button
+                          onClick={() => copyLink(h.prompt, h.url)}
+                          className="rounded border border-border px-2 py-0.5 text-[10px] transition hover:bg-muted"
+                        >
+                          Copy link
+                        </button>
+                      </div>
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))}
             </div>
           </section>
         )}
