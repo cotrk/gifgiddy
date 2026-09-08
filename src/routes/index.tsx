@@ -80,12 +80,56 @@ function Index() {
   const [caption, setCaption] = useState<string | null>(null);
   const [flooded, setFlooded] = useState(false);
   const [history, setHistory] = useState<HistoryEntry[]>([]);
+  const [copied, setCopied] = useState(false);
+  const [shared, setShared] = useState<{ prompt: string; url: string } | null>(null);
+  const [lastPrompt, setLastPrompt] = useState("");
   const timers = useRef<number[]>([]);
 
   useEffect(() => {
     getGiddyGifs().then((r) => setGifUrls(r.urls));
+    const params = new URLSearchParams(window.location.search);
+    const p = params.get("p");
+    const g = params.get("g");
+    if (g) setShared({ prompt: p ?? "", url: g });
     return () => timers.current.forEach((t) => window.clearTimeout(t));
   }, []);
+
+  // Persist ratings so favourites survive a reload
+  useEffect(() => {
+    try {
+      const raw = window.localStorage.getItem(RATINGS_KEY);
+      if (!raw) return;
+      const saved = JSON.parse(raw) as Record<string, number>;
+      setHistory((h) => h.map((e) => ({ ...e, rating: saved[e.id] ?? e.rating })));
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  const rate = (id: string, rating: number) => {
+    setHistory((h) => {
+      const next = h.map((e) => (e.id === id ? { ...e, rating } : e));
+      try {
+        window.localStorage.setItem(
+          RATINGS_KEY,
+          JSON.stringify(Object.fromEntries(next.map((e) => [e.id, e.rating])))
+        );
+      } catch {
+        /* ignore */
+      }
+      return next;
+    });
+  };
+
+  const copyLink = async (prompt: string, url: string) => {
+    try {
+      await navigator.clipboard.writeText(shareLinkFor(prompt, url));
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 1800);
+    } catch {
+      /* ignore */
+    }
+  };
 
   const stage = attempts >= 5 ? 2 : attempts >= 2 ? 1 : 0;
 
