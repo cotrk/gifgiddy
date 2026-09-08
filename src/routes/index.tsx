@@ -292,6 +292,14 @@ function Index() {
                   giddy_v{attempts}.gif
                 </span>
               </div>
+              <div className="border-t border-border px-4 py-3">
+                <button
+                  onClick={() => copyLink(lastPrompt, result)}
+                  className="w-full rounded-lg border border-border px-4 py-2 text-xs font-semibold transition hover:bg-muted"
+                >
+                  {copied ? "Link copied — go ruin someone's day" : "Copy shareable link"}
+                </button>
+              </div>
             </div>
             {extras.map((e, i) => (
               <img
