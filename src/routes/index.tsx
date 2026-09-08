@@ -51,12 +51,11 @@ const CONFIDENT_CAPTIONS = [
 
 const FLOOD_CAPTION = "It's all Giddy now.";
 
-function randomFrom<T>(arr: T[], avoid?: T): T {
-  if (arr.length <= 1) return arr[0];
-  let pick = arr[Math.floor(Math.random() * arr.length)];
+function randomFrom(arr: string[], avoid?: string | null): string {
+  let pick = arr[Math.floor(Math.random() * arr.length)] ?? "";
   let guard = 0;
   while (pick === avoid && guard++ < 10) {
-    pick = arr[Math.floor(Math.random() * arr.length)];
+    pick = arr[Math.floor(Math.random() * arr.length)] ?? "";
   }
   return pick;
 }
@@ -119,7 +118,7 @@ function Index() {
         } else if (nextAttempts >= 3) {
           const count = nextAttempts - 2;
           const extraList = Array.from({ length: count }, (_, i) => ({
-            url: gifUrls[(i * 7 + nextAttempts) % gifUrls.length],
+            url: gifUrls[(i * 7 + nextAttempts) % gifUrls.length] ?? "",
             style: {
               top: `${Math.random() * 60}%`,
               left: `${Math.random() * 60}%`,

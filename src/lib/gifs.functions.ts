@@ -44,11 +44,11 @@ export const getGiddyGifs = createServerFn({ method: "GET" }).handler(
       .map((item) => {
         const f = item.file ?? {};
         return (
-          f.md?.gif?.url ??
-          f.md?.webp?.url ??
-          f.sm?.gif?.url ??
-          f.sm?.webp?.url ??
-          f.hd?.gif?.url ??
+          f["md"]?.gif?.url ??
+          f["md"]?.webp?.url ??
+          f["sm"]?.gif?.url ??
+          f["sm"]?.webp?.url ??
+          f["hd"]?.gif?.url ??
           Object.values(f)[0]?.gif?.url ??
           Object.values(f)[0]?.webp?.url ??
           null
