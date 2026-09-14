@@ -157,15 +157,20 @@ function Index() {
     });
   };
 
-  const copyLink = async (prompt: string, url: string) => {
+  const setNote = (id: string, note: string) => {
+    setHistory((h) => h.map((e) => (e.id === id ? { ...e, note: note.slice(0, 80) } : e)));
+  };
+
+  const copyLink = async (prompt: string, url: string, caption?: string) => {
     try {
-      await navigator.clipboard.writeText(shareLinkFor(prompt, url));
+      await navigator.clipboard.writeText(shareLinkFor(prompt, url, caption));
       setCopied(true);
       window.setTimeout(() => setCopied(false), 1800);
     } catch {
       /* ignore */
     }
   };
+
 
   const stage = attempts >= 5 ? 2 : attempts >= 2 ? 1 : 0;
 
