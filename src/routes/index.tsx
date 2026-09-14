@@ -205,10 +205,13 @@ function Index() {
         const url = randomFrom(gifUrls, result ?? undefined);
         setResult(url);
         setLastPrompt(submitted);
+        const social = randomFrom(SOCIAL_CAPTIONS, lastSocial).slice(0, 40);
+        setLastSocial(social);
         setHistory((h) => [
-          { id: `${Date.now()}-${h.length}`, prompt: submitted, url, rating: 0 },
+          { id: `${Date.now()}-${h.length}`, prompt: submitted, url, rating: 0, social, note: "" },
           ...h,
         ]);
+
 
         if (nextAttempts >= 5) {
           setFlooded(true);
