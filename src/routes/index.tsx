@@ -75,7 +75,7 @@ function randomFrom(arr: string[], avoid?: string | null): string {
 }
 
 function Index() {
-  const [gifUrls, setGifUrls] = useState<string[]>([]);
+  const [gifUrls, setGifUrls] = useState<string[]>(LOCAL_GIFS);
   const [prompt, setPrompt] = useState("");
   const [loading, setLoading] = useState(false);
   const [statusLine, setStatusLine] = useState("");
@@ -92,7 +92,12 @@ function Index() {
   const timers = useRef<number[]>([]);
 
   useEffect(() => {
-    getGiddyGifs().then((r) => setGifUrls(r.urls));
+    getGiddyGifs()
+      .then((r) => {
+        const remote = r.urls.filter((u) => u.toLowerCase().includes(".gif"));
+        if (remote.length) setGifUrls([...LOCAL_GIFS, ...remote]);
+      })
+      .catch(() => undefined);
     const params = new URLSearchParams(window.location.search);
     const p = params.get("p");
     const g = params.get("g");
