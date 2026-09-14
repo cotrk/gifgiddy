@@ -352,6 +352,9 @@ function Index() {
           <div className="relative mt-10 w-full max-w-md">
             <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-2xl">
               <img src={result} alt="AI-generated GIF" className="w-full" />
+              {lastSocial && (
+                <p className="px-4 pt-3 text-sm font-semibold">“{lastSocial}”</p>
+              )}
               <div className="flex items-center justify-between px-4 py-3">
                 <p className="text-xs text-muted-foreground">
                   {caption ?? "Generated in 2.6s · 100% prompt-accurate"}
@@ -362,12 +365,13 @@ function Index() {
               </div>
               <div className="border-t border-border px-4 py-3">
                 <button
-                  onClick={() => copyLink(lastPrompt, result)}
+                  onClick={() => copyLink(lastPrompt, result, lastSocial)}
                   className="w-full rounded-lg border border-border px-4 py-2 text-xs font-semibold transition hover:bg-muted"
                 >
                   {copied ? "Link copied — go ruin someone's day" : "Copy shareable link"}
                 </button>
               </div>
+
             </div>
             {extras.map((e, i) => (
               <img
