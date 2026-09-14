@@ -412,7 +412,14 @@ function Index() {
                     />
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-xs text-muted-foreground">“{h.prompt}”</p>
-                      <p className="mt-1 text-xs font-medium">→ Giddy.</p>
+                      <p className="mt-1 text-xs font-medium">→ “{h.social}”</p>
+                      <input
+                        value={h.note}
+                        onChange={(e) => setNote(h.id, e.target.value)}
+                        maxLength={80}
+                        placeholder="Write your own caption for friends…"
+                        className="mt-2 w-full rounded-lg border border-border bg-background px-2 py-1.5 text-xs outline-none placeholder:text-muted-foreground"
+                      />
                       <div className="mt-2 flex items-center gap-2">
                         <div className="flex">
                           {[1, 2, 3, 4, 5].map((n) => (
@@ -429,12 +436,13 @@ function Index() {
                           ))}
                         </div>
                         <button
-                          onClick={() => copyLink(h.prompt, h.url)}
+                          onClick={() => copyLink(h.prompt, h.url, h.note || h.social)}
                           className="rounded border border-border px-2 py-0.5 text-[10px] transition hover:bg-muted"
                         >
                           Copy link
                         </button>
                       </div>
+
                     </div>
                   </div>
                 ))}
