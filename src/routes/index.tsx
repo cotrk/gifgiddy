@@ -30,15 +30,34 @@ export const Route = createFileRoute("/")({
   component: Index,
 });
 
-type HistoryEntry = { id: string; prompt: string; url: string; rating: number };
+type HistoryEntry = {
+  id: string;
+  prompt: string;
+  url: string;
+  rating: number;
+  social: string;
+  note: string;
+};
 
 const RATINGS_KEY = "giddygen-ratings";
 
-function shareLinkFor(prompt: string, url: string) {
+const SOCIAL_CAPTIONS = [
+  "POV: you asked for anything at all",
+  "the algorithm has spoken. it giddy",
+  "me explaining this to my manager",
+  "prompt: art. output: pure footwork",
+  "AI said no. AI said Giddy.",
+  "asked for cinema, got the griddy",
+  "this is what peak accuracy looks like",
+];
+
+function shareLinkFor(prompt: string, url: string, caption?: string) {
   if (typeof window === "undefined") return "";
   const params = new URLSearchParams({ p: prompt, g: url });
+  if (caption) params.set("c", caption);
   return `${window.location.origin}${window.location.pathname}?${params.toString()}`;
 }
+
 
 const NORMAL_LINES = [
   "Understanding your prompt…",
@@ -87,8 +106,12 @@ function Index() {
   const [flooded, setFlooded] = useState(false);
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [copied, setCopied] = useState(false);
-  const [shared, setShared] = useState<{ prompt: string; url: string } | null>(null);
+  const [shared, setShared] = useState<{ prompt: string; url: string; caption: string } | null>(
+    null
+  );
   const [lastPrompt, setLastPrompt] = useState("");
+  const [lastSocial, setLastSocial] = useState("");
+
   const timers = useRef<number[]>([]);
 
   useEffect(() => {
@@ -101,7 +124,9 @@ function Index() {
     const params = new URLSearchParams(window.location.search);
     const p = params.get("p");
     const g = params.get("g");
-    if (g) setShared({ prompt: p ?? "", url: g });
+    if (g) setShared({ prompt: p ?? "", url: g, caption: params.get("c") ?? "" });
+
+
     return () => timers.current.forEach((t) => window.clearTimeout(t));
   }, []);
 
@@ -132,15 +157,20 @@ function Index() {
     });
   };
 
-  const copyLink = async (prompt: string, url: string) => {
+  const setNote = (id: string, note: string) => {
+    setHistory((h) => h.map((e) => (e.id === id ? { ...e, note: note.slice(0, 80) } : e)));
+  };
+
+  const copyLink = async (prompt: string, url: string, caption?: string) => {
     try {
-      await navigator.clipboard.writeText(shareLinkFor(prompt, url));
+      await navigator.clipboard.writeText(shareLinkFor(prompt, url, caption));
       setCopied(true);
       window.setTimeout(() => setCopied(false), 1800);
     } catch {
       /* ignore */
     }
   };
+
 
   const stage = attempts >= 5 ? 2 : attempts >= 2 ? 1 : 0;
 
@@ -175,10 +205,13 @@ function Index() {
         const url = randomFrom(gifUrls, result ?? undefined);
         setResult(url);
         setLastPrompt(submitted);
+        const social = randomFrom(SOCIAL_CAPTIONS, lastSocial).slice(0, 40);
+        setLastSocial(social);
         setHistory((h) => [
-          { id: `${Date.now()}-${h.length}`, prompt: submitted, url, rating: 0 },
+          { id: `${Date.now()}-${h.length}`, prompt: submitted, url, rating: 0, social, note: "" },
           ...h,
         ]);
+
 
         if (nextAttempts >= 5) {
           setFlooded(true);
@@ -199,7 +232,7 @@ function Index() {
         setLoading(false);
       }, total)
     );
-  }, [attempts, gifUrls, loading, prompt, result, stage]);
+  }, [attempts, gifUrls, lastSocial, loading, prompt, result, stage]);
 
   const reset = () => {
     setAttempts(0);
@@ -267,6 +300,10 @@ function Index() {
               alt="Shared Giddy dance GIF"
               className="w-full rounded-xl"
             />
+            {shared.caption && (
+              <p className="mt-3 text-center text-sm font-semibold">“{shared.caption}”</p>
+            )}
+
             <button
               onClick={() => setShared(null)}
               className="mt-3 text-xs text-muted-foreground underline"
@@ -315,6 +352,9 @@ function Index() {
           <div className="relative mt-10 w-full max-w-md">
             <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-2xl">
               <img src={result} alt="AI-generated GIF" className="w-full" />
+              {lastSocial && (
+                <p className="px-4 pt-3 text-sm font-semibold">“{lastSocial}”</p>
+              )}
               <div className="flex items-center justify-between px-4 py-3">
                 <p className="text-xs text-muted-foreground">
                   {caption ?? "Generated in 2.6s · 100% prompt-accurate"}
@@ -325,12 +365,13 @@ function Index() {
               </div>
               <div className="border-t border-border px-4 py-3">
                 <button
-                  onClick={() => copyLink(lastPrompt, result)}
+                  onClick={() => copyLink(lastPrompt, result, lastSocial)}
                   className="w-full rounded-lg border border-border px-4 py-2 text-xs font-semibold transition hover:bg-muted"
                 >
                   {copied ? "Link copied — go ruin someone's day" : "Copy shareable link"}
                 </button>
               </div>
+
             </div>
             {extras.map((e, i) => (
               <img
@@ -371,7 +412,14 @@ function Index() {
                     />
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-xs text-muted-foreground">“{h.prompt}”</p>
-                      <p className="mt-1 text-xs font-medium">→ Giddy.</p>
+                      <p className="mt-1 text-xs font-medium">→ “{h.social}”</p>
+                      <input
+                        value={h.note}
+                        onChange={(e) => setNote(h.id, e.target.value)}
+                        maxLength={80}
+                        placeholder="Write your own caption for friends…"
+                        className="mt-2 w-full rounded-lg border border-border bg-background px-2 py-1.5 text-xs outline-none placeholder:text-muted-foreground"
+                      />
                       <div className="mt-2 flex items-center gap-2">
                         <div className="flex">
                           {[1, 2, 3, 4, 5].map((n) => (
@@ -388,12 +436,13 @@ function Index() {
                           ))}
                         </div>
                         <button
-                          onClick={() => copyLink(h.prompt, h.url)}
+                          onClick={() => copyLink(h.prompt, h.url, h.note || h.social)}
                           className="rounded border border-border px-2 py-0.5 text-[10px] transition hover:bg-muted"
                         >
                           Copy link
                         </button>
                       </div>
+
                     </div>
                   </div>
                 ))}
