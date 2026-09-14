@@ -30,15 +30,34 @@ export const Route = createFileRoute("/")({
   component: Index,
 });
 
-type HistoryEntry = { id: string; prompt: string; url: string; rating: number };
+type HistoryEntry = {
+  id: string;
+  prompt: string;
+  url: string;
+  rating: number;
+  social: string;
+  note: string;
+};
 
 const RATINGS_KEY = "giddygen-ratings";
 
-function shareLinkFor(prompt: string, url: string) {
+const SOCIAL_CAPTIONS = [
+  "POV: you asked for anything at all",
+  "the algorithm has spoken. it giddy",
+  "me explaining this to my manager",
+  "prompt: art. output: pure footwork",
+  "AI said no. AI said Giddy.",
+  "asked for cinema, got the griddy",
+  "this is what peak accuracy looks like",
+];
+
+function shareLinkFor(prompt: string, url: string, caption?: string) {
   if (typeof window === "undefined") return "";
   const params = new URLSearchParams({ p: prompt, g: url });
+  if (caption) params.set("c", caption);
   return `${window.location.origin}${window.location.pathname}?${params.toString()}`;
 }
+
 
 const NORMAL_LINES = [
   "Understanding your prompt…",
