@@ -123,8 +123,8 @@ function Index() {
       .catch(() => undefined);
     const params = new URLSearchParams(window.location.search);
     const p = params.get("p");
-    const g = params.get("g");
-    if (g) setShared({ prompt: p ?? "", url: g });
+    if (g) setShared({ prompt: p ?? "", url: g, caption: params.get("c") ?? "" });
+
     return () => timers.current.forEach((t) => window.clearTimeout(t));
   }, []);
 
