@@ -300,6 +300,10 @@ function Index() {
               alt="Shared Giddy dance GIF"
               className="w-full rounded-xl"
             />
+            {shared.caption && (
+              <p className="mt-3 text-center text-sm font-semibold">“{shared.caption}”</p>
+            )}
+
             <button
               onClick={() => setShared(null)}
               className="mt-3 text-xs text-muted-foreground underline"
