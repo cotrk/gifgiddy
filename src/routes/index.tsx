@@ -106,8 +106,12 @@ function Index() {
   const [flooded, setFlooded] = useState(false);
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [copied, setCopied] = useState(false);
-  const [shared, setShared] = useState<{ prompt: string; url: string } | null>(null);
+  const [shared, setShared] = useState<{ prompt: string; url: string; caption: string } | null>(
+    null
+  );
   const [lastPrompt, setLastPrompt] = useState("");
+  const [lastSocial, setLastSocial] = useState("");
+
   const timers = useRef<number[]>([]);
 
   useEffect(() => {
