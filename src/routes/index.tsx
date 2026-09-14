@@ -232,7 +232,7 @@ function Index() {
         setLoading(false);
       }, total)
     );
-  }, [attempts, gifUrls, loading, prompt, result, stage]);
+  }, [attempts, gifUrls, lastSocial, loading, prompt, result, stage]);
 
   const reset = () => {
     setAttempts(0);
