@@ -1,6 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { getGiddyGifs } from "../lib/gifs.functions";
+import griddy1 from "@/assets/jj-football-11-justin-jefferson-the-griddy-dance-acegif.gif.asset.json";
+import griddy2 from "@/assets/jj-football-24-justin-jefferson-dancing-acegif.gif.asset.json";
+import griddy3 from "@/assets/jj-football-47-justin-jefferson-dancing-acegif.gif.asset.json";
+import griddy4 from "@/assets/justin-jefferson-gif-5.gif.asset.json";
+
+const LOCAL_GIFS = [griddy1.url, griddy2.url, griddy3.url, griddy4.url];
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -69,7 +75,7 @@ function randomFrom(arr: string[], avoid?: string | null): string {
 }
 
 function Index() {
-  const [gifUrls, setGifUrls] = useState<string[]>([]);
+  const [gifUrls, setGifUrls] = useState<string[]>(LOCAL_GIFS);
   const [prompt, setPrompt] = useState("");
   const [loading, setLoading] = useState(false);
   const [statusLine, setStatusLine] = useState("");
@@ -86,7 +92,12 @@ function Index() {
   const timers = useRef<number[]>([]);
 
   useEffect(() => {
-    getGiddyGifs().then((r) => setGifUrls(r.urls));
+    getGiddyGifs()
+      .then((r) => {
+        const remote = r.urls.filter((u) => u.toLowerCase().includes(".gif"));
+        if (remote.length) setGifUrls([...LOCAL_GIFS, ...remote]);
+      })
+      .catch(() => undefined);
     const params = new URLSearchParams(window.location.search);
     const p = params.get("p");
     const g = params.get("g");
