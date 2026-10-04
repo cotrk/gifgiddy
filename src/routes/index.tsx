@@ -47,14 +47,6 @@ const SOCIAL_CAPTIONS = [
   "this is what peak accuracy looks like",
 ];
 
-function shareLinkFor(prompt: string, url: string, caption?: string) {
-  if (typeof window === "undefined") return "";
-  const params = new URLSearchParams({ p: prompt, g: url });
-  if (caption) params.set("c", caption);
-  return `${window.location.origin}${window.location.pathname}?${params.toString()}`;
-}
-
-
 const NORMAL_LINES = [
   "Understanding your prompt…",
   "Consulting 4.2 billion frames…",
@@ -126,17 +118,25 @@ function Index() {
     return () => timers.current.forEach((t) => window.clearTimeout(t));
   }, []);
 
-  // Persist ratings so favourites survive a reload
+  // Restore past pranks + ratings so the gallery and feed survive a reload
   useEffect(() => {
+    const saved = loadHistory();
+    let ratings: Record<string, number> = {};
     try {
       const raw = window.localStorage.getItem(RATINGS_KEY);
-      if (!raw) return;
-      const saved = JSON.parse(raw) as Record<string, number>;
-      setHistory((h) => h.map((e) => ({ ...e, rating: saved[e.id] ?? e.rating })));
+      if (raw) ratings = JSON.parse(raw) as Record<string, number>;
     } catch {
       /* ignore */
     }
+    if (saved.length) {
+      setHistory(saved.map((e) => ({ ...e, rating: ratings[e.id] ?? e.rating })));
+    }
   }, []);
+
+  // Every prank auto-posts to the feed (persisted locally)
+  useEffect(() => {
+    saveHistory(history);
+  }, [history]);
 
   const rate = (id: string, rating: number) => {
     setHistory((h) => {
