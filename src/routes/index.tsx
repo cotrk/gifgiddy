@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { getGiddyGifs } from "../lib/gifs.functions";
+import { ReactionBox } from "../components/ReactionBox";
 import {
   RATINGS_KEY,
   loadHistory,
@@ -305,6 +306,10 @@ function Index() {
             {shared.caption && (
               <p className="mt-3 text-center text-sm font-semibold">“{shared.caption}”</p>
             )}
+            <div className="-mx-4 mt-3">
+              <ReactionBox prompt={shared.prompt} caption={shared.caption} />
+            </div>
+
 
             <button
               onClick={() => setShared(null)}

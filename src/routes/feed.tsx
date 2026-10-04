@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { loadHistory, shareLinkFor, type HistoryEntry } from "../lib/pranks";
+import { ReactionBox } from "../components/ReactionBox";
 
 export const Route = createFileRoute("/feed")({
   head: () => ({
@@ -111,6 +112,7 @@ function Feed() {
                     {copiedId === e.id ? "Link copied" : "Copy link"}
                   </button>
                 </div>
+                <ReactionBox prompt={e.prompt} caption={e.note || e.social} />
               </article>
             ))}
           </div>
