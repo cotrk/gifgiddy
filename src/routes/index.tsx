@@ -274,6 +274,12 @@ function Index() {
         <p className="mb-3 rounded-full border border-border px-4 py-1 text-xs tracking-widest text-muted-foreground uppercase">
           GiddyGen v9 · Now with 0% fewer guardrails
         </p>
+        <Link
+          to="/feed"
+          className="mb-6 text-xs font-semibold text-muted-foreground underline-offset-4 transition hover:text-foreground hover:underline"
+        >
+          Browse The Feed →
+        </Link>
         <h1 className="text-center text-5xl font-black tracking-tight md:text-6xl">
           Type anything.
           <br />
@@ -447,7 +453,10 @@ function Index() {
         )}
 
         <footer className="mt-auto pt-16 text-center text-[10px] text-muted-foreground">
-          GiddyGen · Trained exclusively on one GIF · No refunds
+          GiddyGen · Trained exclusively on one GIF · No refunds ·{" "}
+          <Link to="/feed" className="underline">
+            The Feed
+          </Link>
         </footer>
       </main>
     </div>
