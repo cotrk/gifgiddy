@@ -1,6 +1,13 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { getGiddyGifs } from "../lib/gifs.functions";
+import {
+  RATINGS_KEY,
+  loadHistory,
+  saveHistory,
+  shareLinkFor,
+  type HistoryEntry,
+} from "../lib/pranks";
 import griddy1 from "@/assets/jj-football-11-justin-jefferson-the-griddy-dance-acegif.gif.asset.json";
 import griddy2 from "@/assets/jj-football-24-justin-jefferson-dancing-acegif.gif.asset.json";
 import griddy3 from "@/assets/jj-football-47-justin-jefferson-dancing-acegif.gif.asset.json";
@@ -29,17 +36,6 @@ export const Route = createFileRoute("/")({
   }),
   component: Index,
 });
-
-type HistoryEntry = {
-  id: string;
-  prompt: string;
-  url: string;
-  rating: number;
-  social: string;
-  note: string;
-};
-
-const RATINGS_KEY = "giddygen-ratings";
 
 const SOCIAL_CAPTIONS = [
   "POV: you asked for anything at all",
