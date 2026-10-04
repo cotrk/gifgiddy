@@ -1,6 +1,13 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { getGiddyGifs } from "../lib/gifs.functions";
+import {
+  RATINGS_KEY,
+  loadHistory,
+  saveHistory,
+  shareLinkFor,
+  type HistoryEntry,
+} from "../lib/pranks";
 import griddy1 from "@/assets/jj-football-11-justin-jefferson-the-griddy-dance-acegif.gif.asset.json";
 import griddy2 from "@/assets/jj-football-24-justin-jefferson-dancing-acegif.gif.asset.json";
 import griddy3 from "@/assets/jj-football-47-justin-jefferson-dancing-acegif.gif.asset.json";
@@ -30,17 +37,6 @@ export const Route = createFileRoute("/")({
   component: Index,
 });
 
-type HistoryEntry = {
-  id: string;
-  prompt: string;
-  url: string;
-  rating: number;
-  social: string;
-  note: string;
-};
-
-const RATINGS_KEY = "giddygen-ratings";
-
 const SOCIAL_CAPTIONS = [
   "POV: you asked for anything at all",
   "the algorithm has spoken. it giddy",
@@ -50,14 +46,6 @@ const SOCIAL_CAPTIONS = [
   "asked for cinema, got the griddy",
   "this is what peak accuracy looks like",
 ];
-
-function shareLinkFor(prompt: string, url: string, caption?: string) {
-  if (typeof window === "undefined") return "";
-  const params = new URLSearchParams({ p: prompt, g: url });
-  if (caption) params.set("c", caption);
-  return `${window.location.origin}${window.location.pathname}?${params.toString()}`;
-}
-
 
 const NORMAL_LINES = [
   "Understanding your prompt…",
@@ -130,17 +118,25 @@ function Index() {
     return () => timers.current.forEach((t) => window.clearTimeout(t));
   }, []);
 
-  // Persist ratings so favourites survive a reload
+  // Restore past pranks + ratings so the gallery and feed survive a reload
   useEffect(() => {
+    const saved = loadHistory();
+    let ratings: Record<string, number> = {};
     try {
       const raw = window.localStorage.getItem(RATINGS_KEY);
-      if (!raw) return;
-      const saved = JSON.parse(raw) as Record<string, number>;
-      setHistory((h) => h.map((e) => ({ ...e, rating: saved[e.id] ?? e.rating })));
+      if (raw) ratings = JSON.parse(raw) as Record<string, number>;
     } catch {
       /* ignore */
     }
+    if (saved.length) {
+      setHistory(saved.map((e) => ({ ...e, rating: ratings[e.id] ?? e.rating })));
+    }
   }, []);
+
+  // Every prank auto-posts to the feed (persisted locally)
+  useEffect(() => {
+    saveHistory(history);
+  }, [history]);
 
   const rate = (id: string, rating: number) => {
     setHistory((h) => {
@@ -278,6 +274,12 @@ function Index() {
         <p className="mb-3 rounded-full border border-border px-4 py-1 text-xs tracking-widest text-muted-foreground uppercase">
           GiddyGen v9 · Now with 0% fewer guardrails
         </p>
+        <Link
+          to="/feed"
+          className="mb-6 text-xs font-semibold text-muted-foreground underline-offset-4 transition hover:text-foreground hover:underline"
+        >
+          Browse The Feed →
+        </Link>
         <h1 className="text-center text-5xl font-black tracking-tight md:text-6xl">
           Type anything.
           <br />
@@ -451,7 +453,10 @@ function Index() {
         )}
 
         <footer className="mt-auto pt-16 text-center text-[10px] text-muted-foreground">
-          GiddyGen · Trained exclusively on one GIF · No refunds
+          GiddyGen · Trained exclusively on one GIF · No refunds ·{" "}
+          <Link to="/feed" className="underline">
+            The Feed
+          </Link>
         </footer>
       </main>
     </div>
