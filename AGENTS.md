@@ -8,3 +8,5 @@
 > Commits you push to the connected branch sync back to Lovable and show up in
 > the editor, so keep the branch in a working state.
 <!-- LOVABLE:END -->
+
+- Keep generated reactions and custom portrait settings in versioned browser storage because the prank experience is intentionally account-free and client-owned.

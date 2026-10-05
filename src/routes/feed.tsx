@@ -2,6 +2,8 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { loadHistory, shareLinkFor, type HistoryEntry } from "../lib/pranks";
 import { ReactionBox } from "../components/ReactionBox";
+import { CharacterGif } from "../components/CharacterGif";
+import { Button } from "../components/ui/button";
 
 export const Route = createFileRoute("/feed")({
   head: () => ({
@@ -35,7 +37,7 @@ function Feed() {
   const copyLink = async (entry: HistoryEntry) => {
     try {
       await navigator.clipboard.writeText(
-        shareLinkFor(entry.prompt, entry.url, entry.note || entry.social)
+        shareLinkFor(entry.prompt, entry.url, entry.note || entry.social, entry.id)
       );
       setCopiedId(entry.id);
       window.setTimeout(() => setCopiedId(null), 1800);
@@ -92,7 +94,7 @@ function Feed() {
                     </span>
                   )}
                 </div>
-                <img
+                <CharacterGif
                   src={e.url}
                   alt="Giddy dance GIF"
                   className="mt-3 w-full"
@@ -105,14 +107,20 @@ function Feed() {
                   <p className="text-[10px] text-muted-foreground">
                     Posted automatically · 100% prompt-accurate
                   </p>
-                  <button
+                  <Button
                     onClick={() => copyLink(e)}
-                    className="rounded-lg border border-border px-3 py-1.5 text-[10px] font-semibold transition hover:bg-muted"
+                    variant="outline"
+                    className="h-auto px-3 py-1.5 text-[10px]"
                   >
                     {copiedId === e.id ? "Link copied" : "Copy link"}
-                  </button>
+                  </Button>
                 </div>
-                <ReactionBox prompt={e.prompt} caption={e.note || e.social} />
+                <ReactionBox
+                  prompt={e.prompt}
+                  caption={e.note || e.social}
+                  gifUrl={e.url}
+                  prankId={e.id}
+                />
               </article>
             ))}
           </div>

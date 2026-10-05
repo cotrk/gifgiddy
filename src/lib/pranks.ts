@@ -29,9 +29,10 @@ export function saveHistory(entries: HistoryEntry[]) {
   }
 }
 
-export function shareLinkFor(prompt: string, url: string, caption?: string) {
+export function shareLinkFor(prompt: string, url: string, caption?: string, prankId?: string) {
   if (typeof window === "undefined") return "";
   const params = new URLSearchParams({ p: prompt, g: url });
   if (caption) params.set("c", caption);
+  if (prankId) params.set("i", prankId);
   return `${window.location.origin}${window.location.pathname}?${params.toString()}`;
 }

@@ -12,35 +12,30 @@ export const getGiddyGifs = createServerFn({ method: "GET" }).handler(
       return { urls: [] as string[], error: "GIF service not configured" };
     }
 
-    const params = new URLSearchParams({
-      q: "griddy dance",
-      customer_id: "giddygif",
-      per_page: "24",
-    });
-
-    const res = await fetch(
-      `https://connector-gateway.lovable.dev/klipy/gifs/search?${params}`,
-      {
-        headers: {
-          Authorization: `Bearer ${lovableKey}`,
-          "X-Connection-Api-Key": klipyKey,
-        },
-      }
+    const searches = ["griddy dance", "doing the griddy", "football griddy celebration"];
+    const responses = await Promise.all(
+      searches.map(async (query) => {
+        const params = new URLSearchParams({ q: query, customer_id: "giddygif", per_page: "18" });
+        const response = await fetch(
+          `https://connector-gateway.lovable.dev/klipy/gifs/search?${params}`,
+          {
+            headers: {
+              Authorization: `Bearer ${lovableKey}`,
+              "X-Connection-Api-Key": klipyKey,
+            },
+          }
+        );
+        if (!response.ok) {
+          console.error(`KLIPY search failed [${response.status}] for ${query}`);
+          return [] as KlipyItem[];
+        }
+        const json = await response.json();
+        return (json?.data?.data ?? []) as KlipyItem[];
+      })
     );
 
-    if (!res.ok) {
-      const body = await res.text();
-      console.error(`KLIPY search failed [${res.status}]: ${body}`);
-      return { urls: [] as string[], error: `GIF search failed (${res.status})` };
-    }
-
-    const json = await res.json();
-    if (!json.result) {
-      return { urls: [] as string[], error: "GIF search failed" };
-    }
-
-    const items: KlipyItem[] = json?.data?.data ?? [];
-    const urls = items
+    const urls = responses
+      .flat()
       .map((item) => {
         const f = item.file ?? {};
         // Only animated .gif files — webp stills were rendering frozen
@@ -52,8 +47,8 @@ export const getGiddyGifs = createServerFn({ method: "GET" }).handler(
           null
         );
       })
-      .filter((u): u is string => typeof u === "string");
+      .filter((u): u is string => typeof u === "string" && u.toLowerCase().includes(".gif"));
 
-    return { urls, error: null };
+    return { urls: [...new Set(urls)], error: urls.length ? null : "GIF search failed" };
   }
 );

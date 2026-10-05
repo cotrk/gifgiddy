@@ -1,7 +1,18 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { Upload, UserRound, X } from "lucide-react";
 import { getGiddyGifs } from "../lib/gifs.functions";
 import { ReactionBox } from "../components/ReactionBox";
+import { CharacterGif } from "../components/CharacterGif";
+import { Button } from "../components/ui/button";
+import { Slider } from "../components/ui/slider";
+import {
+  DEFAULT_CHARACTER,
+  loadCharacter,
+  preparePortrait,
+  saveCharacter,
+  type CharacterSettings,
+} from "../lib/character";
 import {
   RATINGS_KEY,
   loadHistory,
@@ -95,25 +106,41 @@ function Index() {
   const [flooded, setFlooded] = useState(false);
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [copied, setCopied] = useState(false);
-  const [shared, setShared] = useState<{ prompt: string; url: string; caption: string } | null>(
-    null
-  );
+  const [shared, setShared] = useState<{
+    prompt: string;
+    url: string;
+    caption: string;
+    id?: string;
+  } | null>(null);
   const [lastPrompt, setLastPrompt] = useState("");
   const [lastSocial, setLastSocial] = useState("");
+  const [lastPrankId, setLastPrankId] = useState("");
+  const [character, setCharacter] = useState<CharacterSettings>(DEFAULT_CHARACTER);
+  const [characterError, setCharacterError] = useState("");
 
   const timers = useRef<number[]>([]);
+  const recentGifs = useRef<string[]>([]);
+  const portraitInput = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     getGiddyGifs()
       .then((r) => {
         const remote = r.urls.filter((u) => u.toLowerCase().includes(".gif"));
-        if (remote.length) setGifUrls([...LOCAL_GIFS, ...remote]);
+        if (remote.length) setGifUrls([...new Set([...LOCAL_GIFS, ...remote])]);
       })
       .catch(() => undefined);
     const params = new URLSearchParams(window.location.search);
     const p = params.get("p");
     const g = params.get("g");
-    if (g) setShared({ prompt: p ?? "", url: g, caption: params.get("c") ?? "" });
+    if (g) {
+      setShared({
+        prompt: p ?? "",
+        url: g,
+        caption: params.get("c") ?? "",
+        id: params.get("i") ?? undefined,
+      });
+    }
+    setCharacter(loadCharacter());
 
 
     return () => timers.current.forEach((t) => window.clearTimeout(t));
@@ -158,9 +185,30 @@ function Index() {
     setHistory((h) => h.map((e) => (e.id === id ? { ...e, note: note.slice(0, 80) } : e)));
   };
 
-  const copyLink = async (prompt: string, url: string, caption?: string) => {
+  const updateCharacter = (patch: Partial<CharacterSettings>) => {
+    setCharacter((current) => {
+      const next = { ...current, ...patch };
+      saveCharacter(next);
+      return next;
+    });
+  };
+
+  const uploadPortrait = async (file?: File) => {
+    if (!file) return;
+    setCharacterError("");
     try {
-      await navigator.clipboard.writeText(shareLinkFor(prompt, url, caption));
+      const image = await preparePortrait(file);
+      updateCharacter({ image, enabled: true });
+    } catch (error) {
+      setCharacterError(error instanceof Error ? error.message : "That portrait could not be used.");
+    } finally {
+      if (portraitInput.current) portraitInput.current.value = "";
+    }
+  };
+
+  const copyLink = async (prompt: string, url: string, caption?: string, prankId?: string) => {
+    try {
+      await navigator.clipboard.writeText(shareLinkFor(prompt, url, caption, prankId));
       setCopied(true);
       window.setTimeout(() => setCopied(false), 1800);
     } catch {
@@ -199,13 +247,17 @@ function Index() {
         setProgress(100);
         const nextAttempts = attempts + 1;
         setAttempts(nextAttempts);
-        const url = randomFrom(gifUrls, result ?? undefined);
+        const fresh = gifUrls.filter((candidate) => !recentGifs.current.includes(candidate));
+        const url = randomFrom(fresh.length ? fresh : gifUrls, result ?? undefined);
+        recentGifs.current = [url, ...recentGifs.current.filter((item) => item !== url)].slice(0, 4);
         setResult(url);
         setLastPrompt(submitted);
         const social = randomFrom(SOCIAL_CAPTIONS, lastSocial).slice(0, 40);
         setLastSocial(social);
+        const prankId = `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+        setLastPrankId(prankId);
         setHistory((h) => [
-          { id: `${Date.now()}-${h.length}`, prompt: submitted, url, rating: 0, social, note: "" },
+          { id: prankId, prompt: submitted, url, rating: 0, social, note: "" },
           ...h,
         ]);
 
@@ -298,7 +350,7 @@ function Index() {
             <p className="mb-3 text-xs text-muted-foreground">
               A friend asked for “{shared.prompt || "something"}” and got:
             </p>
-            <img
+            <CharacterGif
               src={shared.url}
               alt="Shared Giddy dance GIF"
               className="w-full rounded-xl"
@@ -307,7 +359,12 @@ function Index() {
               <p className="mt-3 text-center text-sm font-semibold">“{shared.caption}”</p>
             )}
             <div className="-mx-4 mt-3">
-              <ReactionBox prompt={shared.prompt} caption={shared.caption} />
+              <ReactionBox
+                prompt={shared.prompt}
+                caption={shared.caption}
+                gifUrl={shared.url}
+                prankId={shared.id}
+              />
             </div>
 
 
@@ -341,6 +398,88 @@ function Index() {
           </div>
         </div>
 
+        <section className="mt-4 w-full rounded-2xl border border-border bg-card p-4">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <UserRound className="h-4 w-4" aria-hidden="true" />
+              <div>
+                <h2 className="text-sm font-bold">Custom Giddy character</h2>
+                <p className="text-[11px] text-muted-foreground">Place a portrait over the dancer.</p>
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                size="sm"
+                variant={character.enabled && character.image ? "default" : "outline"}
+                disabled={!character.image}
+                onClick={() => updateCharacter({ enabled: !character.enabled })}
+              >
+                {character.enabled ? "Custom on" : "Original"}
+              </Button>
+              <Button type="button" size="sm" variant="outline" onClick={() => portraitInput.current?.click()}>
+                <Upload aria-hidden="true" />
+                {character.image ? "Replace" : "Upload portrait"}
+              </Button>
+              {character.image && (
+                <Button
+                  type="button"
+                  size="icon"
+                  variant="ghost"
+                  aria-label="Remove custom portrait"
+                  title="Remove custom portrait"
+                  onClick={() => updateCharacter(DEFAULT_CHARACTER)}
+                >
+                  <X aria-hidden="true" />
+                </Button>
+              )}
+              <input
+                ref={portraitInput}
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                className="sr-only"
+                aria-label="Upload custom character portrait"
+                onChange={(event) => uploadPortrait(event.target.files?.[0])}
+              />
+            </div>
+          </div>
+          {characterError && <p className="mt-3 text-xs text-destructive">{characterError}</p>}
+          {character.image && (
+            <div className="mt-4 grid gap-4 border-t border-border pt-4 sm:grid-cols-3">
+              <label className="text-[11px] font-semibold text-muted-foreground">
+                Left / right
+                <Slider
+                  className="mt-2"
+                  min={5}
+                  max={95}
+                  value={[character.x]}
+                  onValueChange={(value) => updateCharacter({ x: value[0] ?? character.x })}
+                />
+              </label>
+              <label className="text-[11px] font-semibold text-muted-foreground">
+                Up / down
+                <Slider
+                  className="mt-2"
+                  min={5}
+                  max={95}
+                  value={[character.y]}
+                  onValueChange={(value) => updateCharacter({ y: value[0] ?? character.y })}
+                />
+              </label>
+              <label className="text-[11px] font-semibold text-muted-foreground">
+                Portrait size
+                <Slider
+                  className="mt-2"
+                  min={10}
+                  max={55}
+                  value={[character.size]}
+                  onValueChange={(value) => updateCharacter({ size: value[0] ?? character.size })}
+                />
+              </label>
+            </div>
+          )}
+        </section>
+
         {/* Loading */}
         {loading && (
           <div className="mt-10 w-full max-w-md">
@@ -358,7 +497,12 @@ function Index() {
         {result && !loading && (
           <div className="relative mt-10 w-full max-w-md">
             <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-2xl">
-              <img src={result} alt="AI-generated GIF" className="w-full" />
+              <CharacterGif
+                src={result}
+                alt="AI-generated GIF"
+                className="w-full"
+                settings={character}
+              />
               {lastSocial && (
                 <p className="px-4 pt-3 text-sm font-semibold">“{lastSocial}”</p>
               )}
@@ -372,7 +516,7 @@ function Index() {
               </div>
               <div className="border-t border-border px-4 py-3">
                 <button
-                  onClick={() => copyLink(lastPrompt, result, lastSocial)}
+                   onClick={() => copyLink(lastPrompt, result, lastSocial, lastPrankId)}
                   className="w-full rounded-lg border border-border px-4 py-2 text-xs font-semibold transition hover:bg-muted"
                 >
                   {copied ? "Link copied — go ruin someone's day" : "Copy shareable link"}
@@ -412,7 +556,7 @@ function Index() {
                 .sort((a, b) => b.rating - a.rating)
                 .map((h) => (
                   <div key={h.id} className="flex gap-3 rounded-xl border border-border bg-card p-3">
-                    <img
+                     <CharacterGif
                       src={h.url}
                       alt="Giddy dance"
                       className="h-16 w-16 rounded-lg object-cover"
@@ -443,7 +587,7 @@ function Index() {
                           ))}
                         </div>
                         <button
-                          onClick={() => copyLink(h.prompt, h.url, h.note || h.social)}
+                           onClick={() => copyLink(h.prompt, h.url, h.note || h.social, h.id)}
                           className="rounded border border-border px-2 py-0.5 text-[10px] transition hover:bg-muted"
                         >
                           Copy link
