@@ -133,11 +133,12 @@ function Index() {
     const p = params.get("p");
     const g = params.get("g");
     if (g) {
+      const sharedId = params.get("i");
       setShared({
         prompt: p ?? "",
         url: g,
         caption: params.get("c") ?? "",
-        id: params.get("i") ?? undefined,
+        ...(sharedId ? { id: sharedId } : {}),
       });
     }
     setCharacter(loadCharacter());
@@ -363,7 +364,7 @@ function Index() {
                 prompt={shared.prompt}
                 caption={shared.caption}
                 gifUrl={shared.url}
-                prankId={shared.id}
+                {...(shared.id ? { prankId: shared.id } : {})}
               />
             </div>
 

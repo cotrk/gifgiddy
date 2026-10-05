@@ -33,10 +33,12 @@ export function ReactionBox({
     try {
       const r = await makeComment({ data: { reaction, prompt, caption } });
       if (r.error) setError(r.error);
-      else {
+      else if (r.comment) {
         setComment(r.comment);
         saveReaction(storageKey, r.comment);
         setReaction("");
+      } else {
+        setError("The comment came back empty. Try your reaction again.");
       }
     } catch {
       setError("Couldn't reach the comment helper. Check your connection and try again.");
