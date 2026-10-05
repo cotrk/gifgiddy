@@ -42,7 +42,7 @@ export function CharacterGif({
 
   return (
     <div className={`relative overflow-hidden ${className ?? ""}`}>
-      <img src={src} alt={alt} className="h-full w-full object-cover" loading={loading} />
+      <img src={src} alt={alt} className="block h-full w-full object-cover" loading={loading} />
       {character.enabled && character.image && (
         <img
           src={character.image}

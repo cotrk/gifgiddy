@@ -106,9 +106,12 @@ function Index() {
   const [flooded, setFlooded] = useState(false);
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [copied, setCopied] = useState(false);
-  const [shared, setShared] = useState<{ prompt: string; url: string; caption: string } | null>(
-    null
-  );
+  const [shared, setShared] = useState<{
+    prompt: string;
+    url: string;
+    caption: string;
+    id?: string;
+  } | null>(null);
   const [lastPrompt, setLastPrompt] = useState("");
   const [lastSocial, setLastSocial] = useState("");
   const [lastPrankId, setLastPrankId] = useState("");
@@ -129,7 +132,14 @@ function Index() {
     const params = new URLSearchParams(window.location.search);
     const p = params.get("p");
     const g = params.get("g");
-    if (g) setShared({ prompt: p ?? "", url: g, caption: params.get("c") ?? "" });
+    if (g) {
+      setShared({
+        prompt: p ?? "",
+        url: g,
+        caption: params.get("c") ?? "",
+        id: params.get("i") ?? undefined,
+      });
+    }
     setCharacter(loadCharacter());
 
 
@@ -196,9 +206,9 @@ function Index() {
     }
   };
 
-  const copyLink = async (prompt: string, url: string, caption?: string) => {
+  const copyLink = async (prompt: string, url: string, caption?: string, prankId?: string) => {
     try {
-      await navigator.clipboard.writeText(shareLinkFor(prompt, url, caption));
+      await navigator.clipboard.writeText(shareLinkFor(prompt, url, caption, prankId));
       setCopied(true);
       window.setTimeout(() => setCopied(false), 1800);
     } catch {
@@ -353,7 +363,7 @@ function Index() {
                 prompt={shared.prompt}
                 caption={shared.caption}
                 gifUrl={shared.url}
-                prankId={new URLSearchParams(window.location.search).get("i") ?? undefined}
+                prankId={shared.id}
               />
             </div>
 
