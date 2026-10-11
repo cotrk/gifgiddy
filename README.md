@@ -1,14 +1,18 @@
-# Welcome to your Lovable project
+# gifgiddy
+
+Gif generator but 4har rue only gifa it generates  is rhe trending dance cakked "Giddy" thsr is it and higs whole rgomg. The only thing it can do is that ai earpy yeass of artodacts and funny genwrations oa pweseced  here, almost awe ong as a prank. Starung  out  good and stupid or a disaster by the end
 
 This project was built with [Lovable](https://lovable.dev).
 
+**Live app**: https://gifgiddy.lovable.app
+
 ## Build with Lovable
 
-Open your project in the [Lovable editor](https://lovable.dev) and keep building.
+Continue developing this project in the [Lovable editor](https://lovable.dev/projects/cba2b3e9-caff-4090-b99f-f9c1cb708d51).
 
 - **Ship faster**: describe what you want to build and Lovable handles the code.
-- **Stay in sync**: connect the project to GitHub and every change made in Lovable is committed straight to your repository.
-- **Full ownership**: this code is yours. Push to your repository and your changes sync back into Lovable, ready for your next prompt.
+- **Stay in sync**: every change made in Lovable is committed straight to this repository.
+- **Full ownership**: this code is yours. Push to `main` on GitHub and your changes sync back into Lovable, ready for your next prompt.
 
 ## Development
 
@@ -20,10 +24,3 @@ cd <repository-name>
 npm i
 npm run dev
 ```
-
-## Built with
-
-- TanStack Start
-- TypeScript
-- React
-- Tailwind CSS
