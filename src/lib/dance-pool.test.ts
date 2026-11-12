@@ -1,6 +1,12 @@
-import { describe, test } from "node:test";
+import { afterEach, describe, test } from "node:test";
 import { deepStrictEqual, strictEqual } from "node:assert";
-import { DANCE_SEARCHES, nextUnusedDance, uniqueDances } from "./dance-pool";
+import { DANCE_SEARCHES, loadUsedDances, nextUnusedDance, saveUsedDances, uniqueDances } from "./dance-pool";
+
+const originalWindow = Object.getOwnPropertyDescriptor(globalThis, "window");
+afterEach(() => {
+  if (originalWindow) Object.defineProperty(globalThis, "window", originalWindow);
+  else Reflect.deleteProperty(globalThis, "window");
+});
 
 describe("dance variety", () => {
   test("the pool includes Griddy variations and other dances", () => {
@@ -24,5 +30,17 @@ describe("dance variety", () => {
   test("query strings cannot cause the same dance to appear twice", () => {
     deepStrictEqual(uniqueDances(["https://media.example/a.gif?v=1", "https://media.example/a.gif?v=2"]), ["https://media.example/a.gif?v=1"]);
     strictEqual(nextUnusedDance(["https://media.example/a.gif?v=2"], ["https://media.example/a.gif?v=1"]), null);
+  });
+  test("used clips survive reload and an emptied Feed cannot erase no-repeat history", () => {
+    const storage = new Map<string, string>();
+    Object.defineProperty(globalThis, "window", { configurable: true, value: { localStorage: {
+      getItem: (key: string) => storage.get(key) ?? null,
+      setItem: (key: string, value: string) => storage.set(key, value),
+    } } });
+    const urls = ["https://media.example/a.gif", "https://media.example/b.gif"];
+    strictEqual(saveUsedDances(urls), true);
+    deepStrictEqual(loadUsedDances([]), urls);
+    strictEqual(nextUnusedDance(urls, loadUsedDances([])), null);
+    deepStrictEqual(loadUsedDances(["https://media.example/c.gif"]), [...urls, "https://media.example/c.gif"]);
   });
 });
