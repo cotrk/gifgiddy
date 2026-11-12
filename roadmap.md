@@ -8,3 +8,6 @@
 - [x] Add Giddy’s editable bio and social links with a persona page and Feed-backed prank timeline.
 - [x] Expand the dance pool with more Griddy clips and additional viral dances; persist used clips and never silently repeat.
 - [x] Verify profile editing, timeline, dance rotation, reload persistence, and desktop/mobile navigation.
+- [ ] Preserve existing custom characters in versioned storage and surface save failures.
+- [ ] Add a live character-look editor with uploaded and keyboard/pasted stickers.
+- [ ] Verify saved edits, stickers, reload/new-session persistence, and mobile use.
