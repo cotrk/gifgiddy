@@ -34,5 +34,5 @@ export function shareLinkFor(prompt: string, url: string, caption?: string, pran
   const params = new URLSearchParams({ p: prompt, g: url });
   if (caption) params.set("c", caption);
   if (prankId) params.set("i", prankId);
-  return `${window.location.origin}${window.location.pathname}?${params.toString()}`;
+  return `${window.location.origin}/?${params.toString()}`;
 }
