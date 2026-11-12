@@ -100,6 +100,7 @@ function randomFrom(arr: string[], avoid?: string | null): string {
 function Index() {
   const navigate = useNavigate();
   const fetchDances = useServerFn(getGiddyGifs);
+  const { queryClient } = Route.useRouteContext();
   const searchStr = useLocation({ select: (location) => location.searchStr });
   const [gifUrls, setGifUrls] = useState<string[]>(LOCAL_GIFS);
   const [prompt, setPrompt] = useState("");
@@ -137,7 +138,7 @@ function Index() {
     let active = true;
     usedGifs.current = loadUsedDances(loadHistory().map((entry) => entry.url));
     setPoolBusy(true);
-    fetchDances({ data: { page: 1 } })
+    queryClient.fetchQuery({ queryKey: ["dance-pool", 1], queryFn: () => fetchDances({ data: { page: 1 } }), staleTime: 10 * 60 * 1000, retry: false })
       .then((r) => {
         if (!active) return;
         const remote = r.urls.filter((u) => u.toLowerCase().includes(".gif"));
@@ -150,7 +151,7 @@ function Index() {
 
 
     return () => { active = false; timers.current.forEach((t) => window.clearTimeout(t)); };
-  }, [fetchDances]);
+  }, [fetchDances, queryClient]);
 
   useEffect(() => {
     const params = new URLSearchParams(searchStr);
@@ -313,7 +314,7 @@ function Index() {
     setPoolError("");
     try {
       const page = Math.min(100, poolPage.current + 1);
-      const response = await fetchDances({ data: { page } });
+      const response = await queryClient.fetchQuery({ queryKey: ["dance-pool", page], queryFn: () => fetchDances({ data: { page } }), staleTime: 10 * 60 * 1000, retry: false });
       if (!response.urls.length) {
         setPoolError("No new dances loaded. Try again later; your previous dances won’t repeat.");
         return;
@@ -432,8 +433,9 @@ function Index() {
               onChange={(e) => setPrompt(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && generate()}
               placeholder="A serene sunset over the mountains…"
+              aria-label="GIF prompt"
               disabled={loading}
-              className="flex-1 rounded-xl bg-transparent px-4 py-3 text-sm outline-none placeholder:text-muted-foreground"
+              className="min-w-0 flex-1 rounded-xl bg-transparent px-4 py-3 text-sm outline-none placeholder:text-muted-foreground"
             />
             <Button
               onClick={generate}
