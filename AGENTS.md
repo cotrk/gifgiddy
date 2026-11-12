@@ -14,3 +14,4 @@
 - The persona page reads the same local prank history as the Feed and stores editable bio/socials in versioned browser storage; one source keeps both views consistent without accounts.
 - Keep dance searches and no-repeat selection in a shared browser-safe module, persist all used URLs separately from the capped Feed, and stop at pool exhaustion until more clips load; resets and reloads must not silently replay a clip.
 - New prank entries carry an optional ISO timestamp and older entries derive their date from their existing ID; the timeline stays compatible with saved pranks.
+- Keep portrait appearance and sticker layers in one versioned character record with legacy migration; the shared GIF renderer and draft editor must use the same layer rendering so saved looks stay consistent across views.
