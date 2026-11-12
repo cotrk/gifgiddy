@@ -59,6 +59,7 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
+  --color-persona-warm: var(--persona-warm);
 }
 
 :root {
@@ -95,6 +96,7 @@
   --sidebar-accent-foreground: oklch(0.208 0.042 265.755);
   --sidebar-border: oklch(0.929 0.013 255.508);
   --sidebar-ring: oklch(0.704 0.04 256.788);
+  --persona-warm: oklch(0.66 0.15 72);
 }
 
 .dark {
@@ -130,7 +132,36 @@
   --sidebar-accent-foreground: oklch(0.984 0.003 247.858);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.551 0.027 264.364);
+  --persona-warm: oklch(0.83 0.15 82);
 }
+
+.persona-surface {
+  --background: oklch(0.167 0.006 285);
+  --foreground: oklch(0.96 0.004 90);
+  --primary: oklch(0.85 0.14 180);
+  --primary-foreground: oklch(0.167 0.006 285);
+  --muted: oklch(0.25 0.006 285);
+  --muted-foreground: oklch(0.74 0.008 285);
+  --accent: oklch(0.27 0.02 180);
+  --accent-foreground: oklch(0.96 0.004 90);
+  --border: oklch(0.96 0.004 90 / 18%);
+  --input: oklch(0.96 0.004 90 / 25%);
+  --ring: oklch(0.85 0.14 180);
+  --persona-warm: oklch(0.83 0.15 82);
+  --persona-shade-top: oklch(0.167 0.006 285 / 8%);
+  --persona-shade-bottom: oklch(0.167 0.006 285 / 98%);
+  --persona-shade: linear-gradient(to bottom, var(--persona-shade-top) 20%, var(--persona-shade-bottom) 100%);
+  font-family: "IBM Plex Sans", sans-serif;
+  letter-spacing: 0;
+}
+
+.persona-display {
+  font-family: "Bebas Neue", sans-serif;
+  font-weight: 400;
+  letter-spacing: 0;
+}
+
+.persona-cover-shade { background: var(--persona-shade); }
 
 @layer base {
   * {

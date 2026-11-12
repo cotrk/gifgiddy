@@ -5,10 +5,16 @@ export type HistoryEntry = {
   rating: number;
   social: string;
   note: string;
+  createdAt?: string;
 };
 
 export const RATINGS_KEY = "giddygen-ratings";
 export const HISTORY_KEY = "giddygen-history";
+
+export function prankDate(entry: HistoryEntry): Date | null {
+  const date = entry.createdAt ? new Date(entry.createdAt) : new Date(Number(entry.id.split("-")[0]));
+  return Number.isFinite(date.getTime()) && date.getFullYear() >= 2020 ? date : null;
+}
 
 export function loadHistory(): HistoryEntry[] {
   try {

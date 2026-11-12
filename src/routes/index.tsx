@@ -1,7 +1,10 @@
 import { createFileRoute, Link, useLocation, useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { z } from "zod";
+import { useServerFn } from "@tanstack/react-start";
 import { Upload, UserRound, X } from "lucide-react";
 import { getGiddyGifs } from "../lib/gifs.functions";
+import { loadUsedDances, nextUnusedDance, saveUsedDances, uniqueDances } from "../lib/dance-pool";
 import { ReactionBox } from "../components/ReactionBox";
 import { CharacterGif } from "../components/CharacterGif";
 import { Button } from "../components/ui/button";
@@ -28,6 +31,7 @@ import griddy4 from "@/assets/justin-jefferson-gif-5.gif.asset.json";
 const LOCAL_GIFS = [griddy1.url, griddy2.url, griddy3.url, griddy4.url];
 
 export const Route = createFileRoute("/")({
+  validateSearch: (search) => z.object({ p: z.string().optional(), g: z.string().optional(), c: z.string().optional(), i: z.string().optional() }).parse(search),
   head: () => ({
     meta: [
       { title: "GiddyGen — AI GIF Generator" },
@@ -95,6 +99,8 @@ function randomFrom(arr: string[], avoid?: string | null): string {
 
 function Index() {
   const navigate = useNavigate();
+  const fetchDances = useServerFn(getGiddyGifs);
+  const { queryClient } = Route.useRouteContext();
   const searchStr = useLocation({ select: (location) => location.searchStr });
   const [gifUrls, setGifUrls] = useState<string[]>(LOCAL_GIFS);
   const [prompt, setPrompt] = useState("");
@@ -119,23 +125,33 @@ function Index() {
   const [lastPrankId, setLastPrankId] = useState("");
   const [character, setCharacter] = useState<CharacterSettings>(DEFAULT_CHARACTER);
   const [characterError, setCharacterError] = useState("");
+  const [poolBusy, setPoolBusy] = useState(false);
+  const [poolError, setPoolError] = useState("");
+  const [poolExhausted, setPoolExhausted] = useState(false);
+  const poolPage = useRef(1);
 
   const timers = useRef<number[]>([]);
-  const recentGifs = useRef<string[]>([]);
+  const usedGifs = useRef<string[]>([]);
   const portraitInput = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    getGiddyGifs()
+    let active = true;
+    usedGifs.current = loadUsedDances(loadHistory().map((entry) => entry.url));
+    setPoolBusy(true);
+    queryClient.fetchQuery({ queryKey: ["dance-pool", 1], queryFn: () => fetchDances({ data: { page: 1 } }), staleTime: 10 * 60 * 1000, retry: false })
       .then((r) => {
+        if (!active) return;
         const remote = r.urls.filter((u) => u.toLowerCase().includes(".gif"));
-        if (remote.length) setGifUrls([...new Set([...LOCAL_GIFS, ...remote])]);
+        if (remote.length) setGifUrls(uniqueDances([...LOCAL_GIFS, ...remote]));
+        else setPoolError("More dances couldn’t load. Your uploaded Griddy clips are still available.");
       })
-      .catch(() => undefined);
+      .catch(() => { if (active) setPoolError("More dances couldn’t load. Try loading again."); })
+      .finally(() => { if (active) setPoolBusy(false); });
     setCharacter(loadCharacter());
 
 
-    return () => timers.current.forEach((t) => window.clearTimeout(t));
-  }, []);
+    return () => { active = false; timers.current.forEach((t) => window.clearTimeout(t)); };
+  }, [fetchDances, queryClient]);
 
   useEffect(() => {
     const params = new URLSearchParams(searchStr);
@@ -224,6 +240,15 @@ function Index() {
 
   const generate = useCallback(() => {
     if (loading || gifUrls.length === 0) return;
+    const url = nextUnusedDance(gifUrls, usedGifs.current);
+    if (!url) { setPoolExhausted(true); return; }
+    const used = [...usedGifs.current, url];
+    if (!saveUsedDances(used)) {
+      setPoolError("This browser couldn’t save your dance history. Free up browser storage and try again.");
+      return;
+    }
+    usedGifs.current = used;
+    setPoolExhausted(false);
     const submitted = prompt.trim() || "(no prompt — they just clicked)";
     setLoading(true);
     setProgress(0);
@@ -250,9 +275,6 @@ function Index() {
         setProgress(100);
         const nextAttempts = attempts + 1;
         setAttempts(nextAttempts);
-        const fresh = gifUrls.filter((candidate) => !recentGifs.current.includes(candidate));
-        const url = randomFrom(fresh.length ? fresh : gifUrls, result ?? undefined);
-        recentGifs.current = [url, ...recentGifs.current.filter((item) => item !== url)].slice(0, 4);
         setResult(url);
         setLastPrompt(submitted);
         const social = randomFrom(SOCIAL_CAPTIONS, lastSocial).slice(0, 40);
@@ -260,7 +282,7 @@ function Index() {
         const prankId = `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
         setLastPrankId(prankId);
         setHistory((h) => [
-          { id: prankId, prompt: submitted, url, rating: 0, social, note: "" },
+          { id: prankId, prompt: submitted, url, rating: 0, social, note: "", createdAt: new Date().toISOString() },
           ...h,
         ]);
 
@@ -284,7 +306,31 @@ function Index() {
         setLoading(false);
       }, total)
     );
-  }, [attempts, gifUrls, lastSocial, loading, prompt, result, stage]);
+  }, [attempts, gifUrls, lastSocial, loading, prompt, stage]);
+
+  const loadMoreDances = async () => {
+    if (poolBusy) return;
+    setPoolBusy(true);
+    setPoolError("");
+    try {
+      const page = Math.min(100, poolPage.current + 1);
+      const response = await queryClient.fetchQuery({ queryKey: ["dance-pool", page], queryFn: () => fetchDances({ data: { page } }), staleTime: 10 * 60 * 1000, retry: false });
+      if (!response.urls.length) {
+        setPoolError("No new dances loaded. Try again later; your previous dances won’t repeat.");
+        return;
+      }
+      poolPage.current = page;
+      const next = uniqueDances([...gifUrls, ...response.urls]);
+      setGifUrls(next);
+      const exhausted = !nextUnusedDance(next, usedGifs.current);
+      setPoolExhausted(exhausted);
+      if (exhausted) setPoolError("You’ve seen all available dances. Check back later for new clips.");
+    } catch {
+      setPoolError("More dances couldn’t load. Try again shortly.");
+    } finally {
+      setPoolBusy(false);
+    }
+  };
 
   const reset = () => {
     setAttempts(0);
@@ -292,7 +338,6 @@ function Index() {
     setResult(null);
     setExtras([]);
     setCaption(null);
-    setHistory([]);
     setPrompt("");
   };
 
@@ -388,17 +433,27 @@ function Index() {
               onChange={(e) => setPrompt(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && generate()}
               placeholder="A serene sunset over the mountains…"
+              aria-label="GIF prompt"
               disabled={loading}
-              className="flex-1 rounded-xl bg-transparent px-4 py-3 text-sm outline-none placeholder:text-muted-foreground"
+              className="min-w-0 flex-1 rounded-xl bg-transparent px-4 py-3 text-sm outline-none placeholder:text-muted-foreground"
             />
-            <button
+            <Button
               onClick={generate}
-              disabled={loading || gifUrls.length === 0}
-              className="rounded-xl bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground transition hover:opacity-90 disabled:opacity-50"
+              disabled={loading || gifUrls.length === 0 || poolExhausted}
+              className="h-auto px-6 py-3 text-sm font-semibold"
             >
               {gifUrls.length === 0 ? "Warming up…" : "Generate"}
-            </button>
+            </Button>
           </div>
+          <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
+            <p className="text-xs text-muted-foreground" role="status">
+              {poolExhausted ? "All these dances have had their moment. Time for new ones." : poolBusy ? "Finding more footwork…" : `${gifUrls.length} dances in rotation`}
+            </p>
+            <Button variant="ghost" size="sm" disabled={poolBusy} onClick={loadMoreDances}>
+              {poolBusy ? "Loading dances…" : "Load more dances"}
+            </Button>
+          </div>
+          {poolError && <p role="alert" className="mt-2 text-xs text-destructive">{poolError}</p>}
         </div>
 
         <section className="mt-4 w-full rounded-2xl border border-border bg-card p-4">
