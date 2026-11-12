@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useLocation, useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Upload, UserRound, X } from "lucide-react";
 import { getGiddyGifs } from "../lib/gifs.functions";
@@ -94,6 +94,8 @@ function randomFrom(arr: string[], avoid?: string | null): string {
 }
 
 function Index() {
+  const navigate = useNavigate();
+  const searchStr = useLocation({ select: (location) => location.searchStr });
   const [gifUrls, setGifUrls] = useState<string[]>(LOCAL_GIFS);
   const [prompt, setPrompt] = useState("");
   const [loading, setLoading] = useState(false);
@@ -129,23 +131,23 @@ function Index() {
         if (remote.length) setGifUrls([...new Set([...LOCAL_GIFS, ...remote])]);
       })
       .catch(() => undefined);
-    const params = new URLSearchParams(window.location.search);
-    const p = params.get("p");
-    const g = params.get("g");
-    if (g) {
-      const sharedId = params.get("i");
-      setShared({
-        prompt: p ?? "",
-        url: g,
-        caption: params.get("c") ?? "",
-        ...(sharedId ? { id: sharedId } : {}),
-      });
-    }
     setCharacter(loadCharacter());
 
 
     return () => timers.current.forEach((t) => window.clearTimeout(t));
   }, []);
+
+  useEffect(() => {
+    const params = new URLSearchParams(searchStr);
+    const url = params.get("g");
+    const id = params.get("i");
+    setShared(url ? {
+      prompt: params.get("p") ?? "",
+      url,
+      caption: params.get("c") ?? "",
+      ...(id ? { id } : {}),
+    } : null);
+  }, [searchStr]);
 
   // Restore past pranks + ratings so the gallery and feed survive a reload
   useEffect(() => {
@@ -369,12 +371,12 @@ function Index() {
             </div>
 
 
-            <button
-              onClick={() => setShared(null)}
-              className="mt-3 text-xs text-muted-foreground underline"
+            <Button
+              onClick={() => navigate({ to: "/", search: {}, replace: true })}
+              className="mt-3 w-full"
             >
-              Dismiss and try your own prompt
-            </button>
+              Generate your own
+            </Button>
           </div>
         )}
 
