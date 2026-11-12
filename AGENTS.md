@@ -10,3 +10,4 @@
 <!-- LOVABLE:END -->
 
 - Keep generated reactions and custom portrait settings in versioned browser storage because the prank experience is intentionally account-free and client-owned.
+- Render shared navigation in the root layout and canonicalize prank links to `/`; the Feed cannot display shared prank query data.
