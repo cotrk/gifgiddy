@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { Home, LayoutGrid } from "lucide-react";
+import { Home, LayoutGrid, UserRound } from "lucide-react";
 import { Button } from "./ui/button";
 
 export function AppNavigation() {
@@ -20,6 +20,12 @@ export function AppNavigation() {
             <Link to="/feed" activeProps={{ className: "bg-accent text-accent-foreground", "aria-current": "page" }}>
               <LayoutGrid aria-hidden="true" />
               The Feed
+            </Link>
+          </Button>
+          <Button asChild variant="ghost" size="sm">
+            <Link to="/giddy" activeProps={{ className: "bg-accent text-accent-foreground", "aria-current": "page" }}>
+              <UserRound aria-hidden="true" />
+              Giddy
             </Link>
           </Button>
         </div>
